@@ -1,6 +1,6 @@
 # API Gateway with Rate Limiter & Live Dashboard
 
-A lightweight API Gateway that sits in front of any backend API and protects it with **rate limiting**, **response caching**, **concurrent request handling**, and **traffic logging** — paired with a **React dashboard** for real-time monitoring and live rule configuration.
+A lightweight API Gateway, built with **Java + Spring Boot**, that sits in front of any backend API and protects it with **rate limiting**, **response caching**, **concurrent request handling**, and **traffic logging** — paired with a **React dashboard** for real-time monitoring and live rule configuration.
 
 > **Why this project?** It demonstrates core backend / system-design concepts that interviewers ask about (rate limiting algorithms, caching, concurrency, thread safety) while reusing prior React experience for a polished, demo-able dashboard. Built by a 2-person team over 4 weeks.
 
@@ -83,14 +83,15 @@ The gateway and dashboard communicate **only** through the documented [API Contr
 
 | Layer | Choice | Notes |
 |-------|--------|-------|
-| Gateway | **Java + Spring Boot** *(or Go)* | Java reuses project-1 experience; Go is a great fit for this kind of tool — decide in Week 1 |
-| Mock backend | Same language as gateway | Keep it minimal |
-| Dashboard | **React** | Reuses project-1 frontend skills |
-| Charts | Recharts *or* Chart.js | Pick one |
+| Gateway | **Java 17+ · Spring Boot 3** | Spring Web for the proxy & management API |
+| Mock backend | **Java · Spring Boot** | A minimal second Spring Boot app |
+| Build tool | **Maven** | Wrapper (`./mvnw`) committed so no local install needed |
+| Concurrency | `ConcurrentHashMap`, `AtomicInteger`/`AtomicLong`, `synchronized` where needed | Core of the thread-safe limiter & cache |
+| Logging | **SLF4J + Logback** | Structured request logs |
+| Dashboard | **React 18 + Vite** | Reuses project-1 frontend skills |
+| Charts | **Recharts** | One charting library, learned well |
 | Real-time | Polling first → WebSockets/SSE if time allows | Start simple |
-| Load testing | k6 / Apache Bench / hey | For the demo |
-
-> **Language decision:** This README assumes Java + Spring Boot. If you choose Go, the structure and contract stay identical — only implementation details change.
+| Load testing | **k6** *(or Apache Bench / hey)* | For the demo |
 
 ---
 
@@ -109,7 +110,7 @@ Responsibilities:
 - Traffic logging & metrics aggregation
 - Implement the management API endpoints (the contract)
 
-**Skills demonstrated:** system design, concurrency, algorithms, API design.
+**Skills demonstrated:** system design, concurrency, algorithms, API design, Spring Boot.
 
 ### 👤 Frontend Engineer
 **Owns:** the dashboard and the experience of monitoring/configuring the gateway.
@@ -178,7 +179,7 @@ Updates rules live (no restart). Body mirrors the `GET /admin/config` shape. Ret
 ### Proxied traffic: `ANY /api/**`
 Any request under `/api/**` is rate-limited, possibly served from cache, then forwarded to the mock backend. Returns **429 Too Many Requests** when the limit is exceeded.
 
-> **Tip:** While the backend is still building these, the frontend can develop against a **mock server** (e.g. a small JSON stub) that returns the shapes above. That way neither role is blocked waiting on the other.
+> **Tip:** While the backend is still building these, the frontend can develop against a **mock server** (a small JSON stub returning the shapes above). That way neither role is blocked waiting on the other.
 
 ---
 
@@ -186,24 +187,24 @@ Any request under `/api/**` is rate-limited, possibly served from cache, then fo
 
 ### Week 1 — Fundamentals & Setup *(both, together)*
 - [ ] Study Phase 0 of the learning roadmap (API gateway concept, HTTP, system design, rate limiter framing)
-- [ ] **Decide language** (Java vs Go)
 - [ ] **Agree & freeze the API contract** (above)
 - [ ] Repo setup: monorepo with `/gateway`, `/mock-backend`, `/dashboard`; README; basic CI optional
-- [ ] "Hello world" for each part: gateway forwards a request; dashboard renders an empty shell
+- [ ] Scaffold both Spring Boot apps (Spring Initializr) and the Vite React app
+- [ ] "Hello world" for each part: gateway forwards a request to the mock backend; dashboard renders an empty shell
 - **Milestone:** a request flows Client → Gateway → Mock Backend → Client, and the dashboard loads.
 
 ### Weeks 2–3 — Parallel Build
 Both tracks run at the same time, integrating against the frozen contract.
 
 **Backend track**
-- [ ] *Week 2:* Request interception + forwarding; Token Bucket rate limiter; return 429 on limit
-- [ ] *Week 2:* Traffic logging; implement `GET /admin/metrics` and `GET /admin/logs`
-- [ ] *Week 3:* Sliding Window algorithm; make limiter pluggable
-- [ ] *Week 3:* LRU response cache with TTL; concurrency hardening (thread-safe counters/cache); `GET`/`PUT /admin/config`
-- **Backend milestone:** all contract endpoints live; limiter + cache working under concurrent load.
+- [ ] *Week 2:* Request interception + forwarding (Spring filter/interceptor); Token Bucket rate limiter; return 429 on limit
+- [ ] *Week 2:* Traffic logging (SLF4J/Logback); implement `GET /admin/metrics` and `GET /admin/logs`
+- [ ] *Week 3:* Sliding Window algorithm; make the limiter pluggable behind one interface
+- [ ] *Week 3:* LRU response cache with TTL; concurrency hardening (`ConcurrentHashMap`, atomic counters); `GET`/`PUT /admin/config`
+- **Backend milestone:** all contract endpoints live; limiter + cache correct under concurrent load.
 
 **Frontend track**
-- [ ] *Week 2:* Dashboard shell + data fetching from `/admin/metrics`; first live chart (requests/sec)
+- [ ] *Week 2:* Dashboard shell + data fetching from `/admin/metrics`; first live chart (requests/sec) with Recharts
 - [ ] *Week 2:* Request log table from `/admin/logs` with filtering
 - [ ] *Week 3:* Full metrics panel (blocked ratio, latency, cache hit rate); real-time updates (polling → WS/SSE)
 - [ ] *Week 3:* Rule editor calling `PUT /admin/config`; visual highlight for blocked requests
@@ -212,7 +213,7 @@ Both tracks run at the same time, integrating against the frozen contract.
 > **Mid-point integration (end of Week 2):** connect the real dashboard to the real gateway for the first time. Fix contract mismatches now, not in Week 4.
 
 ### Week 4 — Polish, Test & Demo *(both, together)*
-- [ ] Build the load-test script (fire ~1000+ requests) using k6 / ab / hey
+- [ ] Build the load-test script (fire ~1000+ requests) with k6
 - [ ] Tune & verify: blocked requests appear, latency drops when cache warms
 - [ ] Polish UI; handle edge cases & errors
 - [ ] Write final docs: architecture diagram, algorithm explanations, screenshots/GIF, **measured results**
@@ -223,26 +224,28 @@ Both tracks run at the same time, integrating against the frozen contract.
 
 ## Getting Started
 
-> Fill in exact commands once the stack is finalized.
-
 ### Prerequisites
-- Java 17+ and Maven/Gradle *(or Go 1.21+)*
-- Node.js 18+ and npm
+- **Java 17+**
+- **Node.js 18+** and npm
+- Maven wrapper is included (`./mvnw`) — no separate Maven install needed
 
 ### Run the backend (gateway + mock)
 ```bash
+# Terminal 1 — gateway on :8080
 cd gateway
-./mvnw spring-boot:run        # gateway on :8080
+./mvnw spring-boot:run
 
-cd ../mock-backend
-./mvnw spring-boot:run        # mock API on :9090
+# Terminal 2 — mock API on :9090
+cd mock-backend
+./mvnw spring-boot:run
 ```
 
 ### Run the dashboard
 ```bash
+# Terminal 3 — dashboard on :5173
 cd dashboard
 npm install
-npm run dev                   # dashboard on :5173
+npm run dev
 ```
 
 ### Try it
@@ -250,8 +253,10 @@ npm run dev                   # dashboard on :5173
 # Send a request through the gateway
 curl http://localhost:8080/api/weather
 
-# Hammer it to trigger rate limiting
-for i in $(seq 1 200); do curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/api/weather; done
+# Hammer it to trigger rate limiting (watch for 429s)
+for i in $(seq 1 200); do
+  curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/api/weather
+done
 ```
 
 ---
@@ -262,7 +267,7 @@ The headline demo: **fire ~1000 requests at the gateway and watch the dashboard 
 
 1. Start gateway, mock backend, and dashboard.
 2. Open the dashboard.
-3. Run the load-test script.
+3. Run the k6 load-test script.
 4. Observe:
    - Requests/sec spikes on the live chart
    - A portion of requests turn **red (429 blocked)** once the limit is hit
@@ -277,16 +282,19 @@ This single flow tells the whole story: rate limiting, caching, concurrency, and
 
 ```
 api-gateway/
-├── gateway/            # Backend: the gateway engine + management API
-│   ├── ratelimit/      #   Token Bucket & Sliding Window
-│   ├── cache/          #   LRU cache
-│   ├── logging/        #   traffic records & metrics
-│   └── admin/          #   /admin/* management endpoints
-├── mock-backend/       # Backend: trivial dummy API to protect
-├── dashboard/          # Frontend: React monitoring + config UI
-│   ├── components/     #   charts, log table, rule editor
-│   └── api/            #   client for the management API
-├── load-test/          # Shared: k6/ab/hey scripts for the demo
+├── gateway/                  # Backend: gateway engine + management API (Spring Boot)
+│   └── src/main/java/.../
+│       ├── proxy/            #   request interception & forwarding
+│       ├── ratelimit/        #   Token Bucket & Sliding Window (one interface)
+│       ├── cache/            #   LRU cache with TTL
+│       ├── logging/          #   traffic records & metrics aggregation
+│       └── admin/            #   /admin/* management endpoints
+├── mock-backend/             # Backend: trivial dummy API to protect (Spring Boot)
+├── dashboard/                # Frontend: React + Vite monitoring & config UI
+│   └── src/
+│       ├── components/       #   charts, log table, rule editor
+│       └── api/              #   client for the management API
+├── load-test/                # Shared: k6 scripts for the demo
 └── README.md
 ```
 
@@ -295,5 +303,5 @@ api-gateway/
 ## Authors
 
 Built by a 2-person team as a portfolio project.
-- **Backend Engineer** — gateway engine, rate limiting, caching, concurrency
+- **Backend Engineer** — gateway engine, rate limiting, caching, concurrency (Java / Spring Boot)
 - **Frontend Engineer** — React dashboard, real-time monitoring, rule configuration
