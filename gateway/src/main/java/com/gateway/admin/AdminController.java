@@ -35,28 +35,50 @@ public class AdminController {
 
     @GetMapping("/metrics")
     public Map<String, Object> getMetrics() {
-        // TODO: return requestsPerSecond, totalRequests, blockedRequests,
-        //       blockedRatio, avgLatencyMs, cacheHitRate
-        return Map.of();
+        return Map.of(
+            "requestsPerSecond", metrics.getRequestsPerSecond(),
+            "totalRequests",     metrics.getTotalRequests(),
+            "blockedRequests",   metrics.getBlockedRequests(),
+            "blockedRatio",      metrics.getBlockedRatio(),
+            "avgLatencyMs",      metrics.getAvgLatencyMs(),
+            "cacheHitRate",      cacheService.hitRate()
+        );
     }
 
     @GetMapping("/logs")
     public List<RequestRecord> getLogs(
             @RequestParam(defaultValue = "100") int limit,
             @RequestParam(required = false) String clientId) {
-        // TODO: delegate to trafficLogger.getRecent(limit, clientId)
-        return List.of();
+        return trafficLogger.getRecent(limit, clientId);
     }
 
     @GetMapping("/config")
     public Map<String, Object> getConfig() {
-        // TODO: return current algorithm, limit, windowSeconds, cacheTtlSeconds
-        return Map.of();
+        return Map.of(
+            "algorithm",       props.getRateLimit().getAlgorithm(),
+            "limit",           props.getRateLimit().getLimit(),
+            "windowSeconds",   props.getRateLimit().getWindowSeconds(),
+            "cacheTtlSeconds", props.getCache().getTtlSeconds()
+        );
     }
 
     @PutMapping("/config")
     public ResponseEntity<Map<String, Object>> updateConfig(@RequestBody Map<String, Object> body) {
-        // TODO: parse body, call rateLimiterFactory.reconfigure() and cacheService.updateConfig()
-        return ResponseEntity.ok(Map.of());
+        String algorithm     = (String)  body.getOrDefault("algorithm",       props.getRateLimit().getAlgorithm());
+        int    limit         = ((Number) body.getOrDefault("limit",           props.getRateLimit().getLimit())).intValue();
+        int    windowSeconds = ((Number) body.getOrDefault("windowSeconds",   props.getRateLimit().getWindowSeconds())).intValue();
+        int    cacheTtl      = ((Number) body.getOrDefault("cacheTtlSeconds", props.getCache().getTtlSeconds())).intValue();
+        int    cacheMaxSize  = ((Number) body.getOrDefault("cacheMaxSize",    props.getCache().getMaxSize())).intValue();
+
+        rateLimiterFactory.reconfigure(algorithm, limit, windowSeconds);
+        cacheService.updateConfig(cacheTtl, cacheMaxSize);
+        props.getCache().setTtlSeconds(cacheTtl);
+
+        return ResponseEntity.ok(Map.of(
+            "algorithm",       algorithm,
+            "limit",           limit,
+            "windowSeconds",   windowSeconds,
+            "cacheTtlSeconds", cacheTtl
+        ));
     }
 }
