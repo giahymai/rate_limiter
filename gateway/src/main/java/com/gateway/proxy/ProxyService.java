@@ -1,8 +1,10 @@
 package com.gateway.proxy;
 
+import com.gateway.cache.CacheEntry;
 import com.gateway.cache.CacheService;
 import com.gateway.config.GatewayProperties;
 import com.gateway.logging.MetricsAggregator;
+import com.gateway.logging.RequestRecord;
 import com.gateway.logging.TrafficLogger;
 import com.gateway.ratelimit.RateLimiterFactory;
 import org.springframework.http.ResponseEntity;
@@ -32,10 +34,47 @@ public class ProxyService {
     }
 
     public ResponseEntity<String> handle(String clientId, String path, HttpServletRequest request) {
-        // TODO 1: check rate limiter → return 429 if blocked, log BLOCKED
-        // TODO 2: check cache → return cached response if HIT, log HIT
-        // TODO 3: forward to backend via RestTemplate → cache 2xx response, log MISS
-        // TODO 4: record metrics (allowed/blocked, latency)
-        return ResponseEntity.ok("TODO");
+        long start = System.currentTimeMillis();
+
+        // Step 1: rate limit check
+        boolean allowed = rateLimiterFactory.get().tryAcquire(clientId);
+        if (!allowed) {
+            long latency = System.currentTimeMillis() - start;
+            metrics.record(false, latency);
+            trafficLogger.record(new RequestRecord(
+                trafficLogger.nextId(), clientId, path, latency, "BLOCKED", "SKIP"));
+            return ResponseEntity.status(429).body("Too Many Requests");
+        }
+
+        // Step 2: cache check — key is the request path
+        CacheEntry cached = cacheService.get(path);
+        if (cached != null) {
+            long latency = System.currentTimeMillis() - start;
+            metrics.record(true, latency);
+            trafficLogger.record(new RequestRecord(
+                trafficLogger.nextId(), clientId, path, latency, "ALLOWED", "HIT"));
+            return ResponseEntity.status(cached.statusCode).body(cached.body);
+        }
+
+        // Step 3: forward to backend — strip the /api prefix the gateway adds
+        String backendPath = path.replaceFirst("^/api", "");
+        String url = props.getBackendUrl() + backendPath;
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                cacheService.put(path, response.getBody(), response.getStatusCode().value());
+            }
+            long latency = System.currentTimeMillis() - start;
+            metrics.record(true, latency);
+            trafficLogger.record(new RequestRecord(
+                trafficLogger.nextId(), clientId, path, latency, "ALLOWED", "MISS"));
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (Exception e) {
+            long latency = System.currentTimeMillis() - start;
+            metrics.record(true, latency);
+            trafficLogger.record(new RequestRecord(
+                trafficLogger.nextId(), clientId, path, latency, "ALLOWED", "MISS"));
+            return ResponseEntity.status(502).body("Bad Gateway: " + e.getMessage());
+        }
     }
 }
