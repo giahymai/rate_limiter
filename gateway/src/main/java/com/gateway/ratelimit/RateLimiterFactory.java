@@ -11,7 +11,11 @@ public class RateLimiterFactory {
 
     public RateLimiterFactory(GatewayProperties props) {
         this.props = props;
-        // TODO: build initial RateLimiter from props
+        current = build(
+            props.getRateLimit().getAlgorithm(),
+            props.getRateLimit().getLimit(),
+            props.getRateLimit().getWindowSeconds()
+        );
     }
 
     public RateLimiter get() {
@@ -19,6 +23,16 @@ public class RateLimiterFactory {
     }
 
     public synchronized void reconfigure(String algorithm, int limit, int windowSeconds) {
-        // TODO: rebuild current based on algorithm string
+        props.getRateLimit().setAlgorithm(algorithm);
+        props.getRateLimit().setLimit(limit);
+        props.getRateLimit().setWindowSeconds(windowSeconds);
+        current = build(algorithm, limit, windowSeconds);
+    }
+
+    private RateLimiter build(String algorithm, int limit, int windowSeconds) {
+        return switch (algorithm.toUpperCase()) {
+            case "SLIDING_WINDOW" -> new SlidingWindowRateLimiter(limit, windowSeconds);
+            default               -> new TokenBucketRateLimiter(limit, windowSeconds);
+        };
     }
 }

@@ -6,7 +6,7 @@ public class TokenBucketRateLimiter implements RateLimiter {
 
     private volatile int capacity;
     private volatile int windowSeconds;
-    private final ConcurrentHashMap<String, Object> buckets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
 
     public TokenBucketRateLimiter(int capacity, int windowSeconds) {
         this.capacity = capacity;
@@ -15,12 +15,34 @@ public class TokenBucketRateLimiter implements RateLimiter {
 
     @Override
     public boolean tryAcquire(String clientId) {
-        // TODO: get or create bucket for clientId, refill if window elapsed, consume 1 token
-        return false;
+        Bucket bucket = buckets.computeIfAbsent(clientId, k -> new Bucket(capacity, windowSeconds));
+        synchronized (bucket) {
+            if (System.currentTimeMillis() >= bucket.nextRefillAt) {
+                bucket.tokens = capacity;
+                bucket.nextRefillAt = System.currentTimeMillis() + (long) windowSeconds * 1000;
+            }
+            if (bucket.tokens > 0) {
+                bucket.tokens--;
+                return true;
+            }
+            return false;
+        }
     }
 
     @Override
     public void updateConfig(int limit, int windowSeconds) {
-        // TODO: update capacity and window, clear all buckets
+        this.capacity = limit;
+        this.windowSeconds = windowSeconds;
+        buckets.clear();
+    }
+
+    private static class Bucket {
+        int tokens;
+        long nextRefillAt;
+
+        Bucket(int capacity, int windowSeconds) {
+            this.tokens = capacity;
+            this.nextRefillAt = System.currentTimeMillis() + (long) windowSeconds * 1000;
+        }
     }
 }
