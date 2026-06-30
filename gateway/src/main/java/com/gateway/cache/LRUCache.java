@@ -10,21 +10,24 @@ public class LRUCache<K, V> {
 
     public LRUCache(int maxSize) {
         this.maxSize = maxSize;
-        // TODO: init LinkedHashMap in access-order mode, override removeEldestEntry
-        this.map = new LinkedHashMap<>();
+        this.map = new LinkedHashMap<>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+                return size() > maxSize;
+            }
+        };
     }
 
     public synchronized V get(K key) {
-        // TODO
-        return null;
+        return map.get(key);
     }
 
     public synchronized void put(K key, V value) {
-        // TODO
+        map.put(key, value);
     }
 
     public synchronized void remove(K key) {
-        // TODO
+        map.remove(key);
     }
 
     public synchronized int size() {

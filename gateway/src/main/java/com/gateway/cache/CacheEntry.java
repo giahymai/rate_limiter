@@ -12,7 +12,6 @@ public class CacheEntry {
     }
 
     public boolean isExpired() {
-        // TODO
-        return false;
+        return System.currentTimeMillis() > expiresAt;
     }
 }
