@@ -22,6 +22,14 @@ export const options = {
 const BASE_URL = __ENV.GATEWAY_URL || 'http://localhost:8080'
 
 export default function () {
-  // TODO: GET /api/weather, track 429 → blocked counter, 200 → allowed counter
+  const res = http.get(`${BASE_URL}/api/weather`)
+
+  if (res.status === 429) {
+    blocked.add(1)
+  } else {
+    allowed.add(1)
+  }
+
+  check(res, { 'status 200 or 429': r => r.status === 200 || r.status === 429 })
   sleep(0.05)
 }
