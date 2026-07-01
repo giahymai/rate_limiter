@@ -1,17 +1,37 @@
-const BASE = '/admin'
+const API_BASE = import.meta.env.VITE_GATEWAY_API_BASE ?? ''
 
-export async function fetchMetrics() {
-  // TODO: GET /admin/metrics → return parsed JSON
+async function request(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
+  })
+
+  if (!response.ok) {
+    throw new Error(`Gateway API ${path} failed with ${response.status}`)
+  }
+
+  return response.json()
 }
 
-export async function fetchLogs(limit = 100, clientId = '') {
-  // TODO: GET /admin/logs?limit=&clientId= → return parsed JSON array
+export function fetchMetrics(options) {
+  return request('/admin/metrics', options)
 }
 
-export async function fetchConfig() {
-  // TODO: GET /admin/config → return parsed JSON
+export function fetchLogs({ limit = 100, clientId = '', signal } = {}) {
+  const params = new URLSearchParams({ limit: String(limit) })
+  if (clientId) params.set('clientId', clientId)
+  return request(`/admin/logs?${params.toString()}`, { signal })
 }
 
-export async function updateConfig(config) {
-  // TODO: PUT /admin/config with JSON body → return updated config
+export function fetchConfig(options) {
+  return request('/admin/config', options)
+}
+
+export function updateConfig(config, options = {}) {
+  const { algorithm, limit, windowSeconds, cacheTtlSeconds } = config
+  return request('/admin/config', {
+    method: 'PUT',
+    body: JSON.stringify({ algorithm, limit, windowSeconds, cacheTtlSeconds }),
+    ...options,
+  })
 }

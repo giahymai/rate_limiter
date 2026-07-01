@@ -1,0 +1,24 @@
+# Local agent/tooling state
+.agents/
+.codex/
+
+# Node/Vite
+dashboard/node_modules/
+dashboard/dist/
+dashboard/.vite/
+dashboard/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Java/Maven
+**/target/
+
+# Local env, logs, and OS files
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db

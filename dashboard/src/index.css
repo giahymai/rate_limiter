@@ -1,0 +1,209 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.985 0.004 247);
+  --foreground: oklch(0.18 0.02 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 250);
+  --primary: oklch(0.55 0.14 185);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.94 0.01 250);
+  --secondary-foreground: oklch(0.21 0.02 250);
+  --muted: oklch(0.95 0.01 250);
+  --muted-foreground: oklch(0.49 0.02 250);
+  --accent: oklch(0.92 0.03 185);
+  --accent-foreground: oklch(0.21 0.03 185);
+  --destructive: oklch(0.62 0.22 25);
+  --border: oklch(0.89 0.01 250);
+  --input: oklch(0.89 0.01 250);
+  --ring: oklch(0.62 0.12 185);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-color: var(--border);
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@layer components {
+  .demo-shell {
+    --demo-bg: #f8fafc;
+    --demo-panel: #ffffff;
+    --demo-panel-2: #f1f5f9;
+    --demo-text: #0f172a;
+    --demo-muted: #64748b;
+    --demo-border: rgba(15, 23, 42, 0.12);
+    --demo-accent: #0f9f95;
+    --demo-accent-2: #2563eb;
+    --demo-danger: #ef4444;
+    --demo-warn: #f59e0b;
+    --demo-good: #22c55e;
+    --demo-cache: #8b5cf6;
+    --demo-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    min-height: 100vh;
+    background: var(--demo-bg);
+    color: var(--demo-text);
+  }
+
+  .demo-warroom {
+    --demo-bg: #080d12;
+    --demo-panel: #0f171d;
+    --demo-panel-2: #151f27;
+    --demo-text: #eef8fa;
+    --demo-muted: #90a6ad;
+    --demo-border: rgba(144, 166, 173, 0.24);
+    --demo-accent: #35e2ff;
+    --demo-accent-2: #12c29f;
+    --demo-danger: #ff5252;
+    --demo-warn: #f6b64a;
+    --demo-good: #74df7e;
+    --demo-cache: #af7dff;
+    --demo-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+  }
+
+  .panel {
+    border: 1px solid var(--demo-border);
+    background: var(--demo-panel);
+    box-shadow: var(--demo-shadow);
+  }
+
+  .mobile-contained {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+  }
+
+  @media (min-width: 1024px) {
+    .mobile-contained {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  .demo-muted {
+    color: var(--demo-muted);
+  }
+
+  .number-font {
+    font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+    letter-spacing: 0;
+  }
+
+  .metric-context {
+    display: none;
+  }
+
+  @media (min-width: 560px) {
+    .metric-context {
+      display: inline;
+    }
+  }
+
+  .status-allowed {
+    border-color: color-mix(in srgb, var(--demo-good) 48%, transparent);
+    background: color-mix(in srgb, var(--demo-good) 9%, transparent);
+    color: #b9f6c1;
+  }
+
+  .status-blocked {
+    border-color: color-mix(in srgb, var(--demo-danger) 52%, transparent);
+    background: color-mix(in srgb, var(--demo-danger) 9%, transparent);
+    color: #ffb1b1;
+  }
+
+  .cache-hit {
+    border-color: color-mix(in srgb, var(--demo-good) 44%, transparent);
+    background: color-mix(in srgb, var(--demo-good) 8%, transparent);
+    color: #b9f6c1;
+  }
+
+  .cache-miss {
+    border-color: color-mix(in srgb, var(--demo-warn) 48%, transparent);
+    background: color-mix(in srgb, var(--demo-warn) 9%, transparent);
+    color: #ffd58a;
+  }
+
+  .cache-skip {
+    border-color: color-mix(in srgb, var(--demo-muted) 24%, transparent);
+    background: color-mix(in srgb, var(--demo-muted) 7%, transparent);
+    color: #bdd0d6;
+  }
+
+  .chart-grid {
+    stroke: color-mix(in srgb, var(--demo-muted) 24%, transparent);
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
